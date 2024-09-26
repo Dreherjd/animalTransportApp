@@ -1,0 +1,7 @@
+{
+  "name": "dogRunApp",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
