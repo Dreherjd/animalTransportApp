@@ -2,6 +2,10 @@ import { Injectable } from '@angular/core'
 import { LoadingController, ToastController } from '@ionic/angular'
 import { AuthChangeEvent, createClient, Session, SupabaseClient } from '@supabase/supabase-js'
 import { environment } from '../environments/environment'
+import { Router } from '@angular/router';
+import { BehaviorSubject, Observable } from 'rxjs';
+
+const dbName = 'AnimalTransportApp'
 
 export interface Profile {
   username: string
@@ -9,72 +13,31 @@ export interface Profile {
   avatar_url: string
 }
 
+export interface user{
+  user_id: BigInteger;
+  full_name: String;
+  vehicle_type: String;
+  makeModel: String;
+  role: String;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class SupabaseService {
   private supabase: SupabaseClient
+  private _users: BehaviorSubject<user[]> = new BehaviorSubject([]);
 
-  constructor(
-    private loadingCtrl: LoadingController,
-    private toastCtrl: ToastController
-  ) {
+  constructor() {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey)
   }
 
-  get user() {
-    return this.supabase.auth.getUser().then(({ data }) => data?.user)
+  get users(): Observable < user[]>{
+    return this._users.asObservable();
   }
 
-  get session() {
-    return this.supabase.auth.getSession().then(({ data }) => data?.session)
-  }
-
-  get profile() {
-    return this.user
-      .then((user) => user?.id)
-      .then((id) =>
-        this.supabase.from('profiles').select(`username, website, avatar_url`).eq('id', id).single()
-      )
-  }
-
-  authChanges(callback: (event: AuthChangeEvent, session: Session | null) => void) {
-    return this.supabase.auth.onAuthStateChange(callback)
-  }
-
-  signIn(email: string) {
-    return this.supabase.auth.signInWithOtp({ email })
-  }
-
-  signOut() {
-    return this.supabase.auth.signOut()
-  }
-
-  async updateProfile(profile: Profile) {
-    const user = await this.user
-    const update = {
-      ...profile,
-      id: user?.id,
-      updated_at: new Date(),
-    }
-
-    return this.supabase.from('profiles').upsert(update)
-  }
-
-  downLoadImage(path: string) {
-    return this.supabase.storage.from('avatars').download(path)
-  }
-
-  uploadAvatar(filePath: string, file: File) {
-    return this.supabase.storage.from('avatars').upload(filePath, file)
-  }
-
-  async createNotice(message: string) {
-    const toast = await this.toastCtrl.create({ message, duration: 5000 })
-    await toast.present()
-  }
-
-  createLoader() {
-    return this.loadingCtrl.create()
+  async getUsers(){
+    const query = await this.supabase.from('users').select('*');
+    this._users.next(query.data);
   }
 }

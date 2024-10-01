@@ -30,4 +30,6 @@ export class LoginPage implements OnInit {
       await this.supabase.createNotice(error.error_description || error.message)
     }
   }
+
+  
 }
